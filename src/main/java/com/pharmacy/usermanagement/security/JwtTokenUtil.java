@@ -1,6 +1,5 @@
 package com.pharmacy.usermanagement.security;
 
-
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
@@ -11,12 +10,8 @@ import java.util.Date;
 @Component
 public class JwtTokenUtil {
 
-    private final String jwtSecret = "yourSuperSecretKeyForJWTGenerationChangeThisToStrongKey"; // Use env vars in prod
+    private final Key signingKey = Keys.secretKeyFor(SignatureAlgorithm.HS512); // Secure key for HS512
     private final long jwtExpirationInMs = 86400000; // 1 day
-
-    private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
-    }
 
     public String generateToken(String username) {
         Date now = new Date();
@@ -26,13 +21,13 @@ public class JwtTokenUtil {
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .signWith(signingKey)
                 .compact();
     }
 
     public String getUsernameFromJWT(String token) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -42,7 +37,7 @@ public class JwtTokenUtil {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(signingKey).build().parseClaimsJws(token);
             return true;
         } catch (SignatureException | MalformedJwtException | ExpiredJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
             // Handle invalid token
@@ -50,4 +45,3 @@ public class JwtTokenUtil {
         }
     }
 }
-
