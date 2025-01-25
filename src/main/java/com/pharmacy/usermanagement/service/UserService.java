@@ -22,6 +22,11 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+
+   public boolean existsByEmail(String email){
+       return userRepository.findByEmail(email).isPresent();
+    }
+
     public void registerUser(UserRequestDto userDto) {
         UserEntity user = new UserEntity();
         user.setEmail(userDto.getEmail());

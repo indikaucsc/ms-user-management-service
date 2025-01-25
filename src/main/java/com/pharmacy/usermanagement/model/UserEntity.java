@@ -1,6 +1,5 @@
 package com.pharmacy.usermanagement.model;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -13,6 +12,7 @@ public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long userId;
 
     @Column(nullable = false, unique = true)
@@ -21,32 +21,39 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(nullable = false)
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
     private String address;
+
+    @Column(name = "mobile_number")
     private String mobileNumber;
 
-    @Column(nullable = false, columnDefinition = "int default 0")
-    private int failedLoginAttempts;
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean isAccountLocked;
+    @Column(name = "is_account_locked", nullable = false)
+    private boolean isAccountLocked = false;
 
     private String resetToken;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    // Getters and Setters
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
 
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
 }
-
