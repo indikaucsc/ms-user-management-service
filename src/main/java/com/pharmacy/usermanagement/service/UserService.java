@@ -1,6 +1,7 @@
 package com.pharmacy.usermanagement.service;
 
 import com.pharmacy.usermanagement.dto.request.UserRequestDto;
+import com.pharmacy.usermanagement.dto.response.UserResponseDto;
 import com.pharmacy.usermanagement.model.UserEntity;
 import com.pharmacy.usermanagement.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -128,6 +130,24 @@ public class UserService {
                 .map(userRole -> userRole.getRole().getRoleId())
                 .findFirst() // Retrieve the first role ID
                 .orElseThrow(() -> new IllegalArgumentException("No roles found for user with email " + email));
+    }
+
+    public UserResponseDto mapToUserResponseDto(UserEntity user) {
+        List<Long> roleIds = user.getUserRoles().stream()
+                .map(userRole -> userRole.getRole().getRoleId())
+                .collect(Collectors.toList());
+
+        UserResponseDto dto = new UserResponseDto();
+        dto.setEmail(user.getEmail());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setAddress(user.getAddress());
+        dto.setMobileNumber(user.getMobileNumber());
+        dto.setActive(user.isAccountLocked());
+        dto.setRoleIds(roleIds);
+        dto.setId(user.getUserId());
+
+        return dto;
     }
 
 }

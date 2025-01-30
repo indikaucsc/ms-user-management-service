@@ -20,11 +20,8 @@ public class SwaggerConfig {
                         .description("API Documentation for User Management Microservice")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("Your Name")
-                                .email("your-email@example.com")
-                                .url("https://yourwebsite.com"))
-                        .license(new License()
-                                .name("API License")
-                                .url("https://yourlicenseurl.com")));
+                                .name("N W K Kamal Indika")
+                                .email("mit23112@pgu.uwu.ac.lk"))
+                       );
     }
 }

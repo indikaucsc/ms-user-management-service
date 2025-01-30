@@ -1,63 +1,61 @@
 package com.pharmacy.usermanagement.config.filter;
 
-import com.pharmacy.usermanagement.service.SecuriUserDetiles;
+import com.pharmacy.usermanagement.service.SecurityUserDetails;
 import com.pharmacy.usermanagement.util.JwtTokenUtil;
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
-public class JwtAuthenticationFilter implements Filter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtTokenUtil jwtTokenUtil;
-    private final SecuriUserDetiles userDetailsService;
+    private final SecurityUserDetails userDetailsService;
 
-    public JwtAuthenticationFilter(JwtTokenUtil jwtTokenUtil, SecuriUserDetiles userDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenUtil jwtTokenUtil, SecurityUserDetails userDetailsService) {
         this.jwtTokenUtil = jwtTokenUtil;
         this.userDetailsService = userDetailsService;
     }
 
     @Override
-    public void doFilter(
-            jakarta.servlet.ServletRequest request,
-            jakarta.servlet.ServletResponse response,
-            FilterChain filterChain) throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
-
-        String token = getTokenFromHeader(httpRequest);
-        System.out.println("Filter token: " + token);
+        String token = getTokenFromHeader(request);
+        logger.info("JWT Token received: {}", token);
 
         try {
-            if (StringUtils.hasText(token)) {
-                if (!jwtTokenUtil.validateToken(token)) {
-                    throw new SecurityException("Invalid JWT Token");
-                }
-
+            if (StringUtils.hasText(token) && jwtTokenUtil.validateToken(token)) {
                 String username = jwtTokenUtil.getUsernameFromToken(token);
+
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    var userDetails = userDetailsService.loadUserByUsername(username);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpRequest));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.info("User '{}' authenticated successfully", username);
                 }
             }
         } catch (SecurityException ex) {
-            // Log the error and send an unauthorized response
-//            System.err.println("Authentication failed: " + ex.getMessage());
-//            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: " + ex.getMessage());
-//            return; // Stop further execution of the filter chain
+            logger.error("Authentication failed: {}", ex.getMessage());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Invalid JWT Token");
+            return; // Stop execution of filter chain
         }
 
         filterChain.doFilter(request, response);
@@ -65,7 +63,8 @@ public class JwtAuthenticationFilter implements Filter {
 
     private String getTokenFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        System.out.println("Received Authorization Header: " + bearerToken);
+        logger.debug("Received Authorization Header: {}", bearerToken);
+
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7); // Remove "Bearer " prefix
         }
