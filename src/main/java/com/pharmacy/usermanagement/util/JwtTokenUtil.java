@@ -28,11 +28,11 @@ public class JwtTokenUtil {
      * @param username the username for which the token is generated.
      * @return the generated token.
      */
-    public String generateToken(String username) {
+    public String generateToken(String username, long roleId) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .claim("role", "admin")
+                .claim("roleId", roleId)
                 .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();

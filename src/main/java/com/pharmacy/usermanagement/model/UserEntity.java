@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -36,7 +37,7 @@ public class UserEntity {
     private int failedLoginAttempts = 0;
 
     @Column(name = "is_account_locked", nullable = false)
-    private boolean isAccountLocked = false;
+    private boolean isAccountLocked;
 
     private String resetToken;
 
@@ -45,6 +46,11 @@ public class UserEntity {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserRoleEntity> userRoles;
+
+
 
     @PrePersist
     public void prePersist() {

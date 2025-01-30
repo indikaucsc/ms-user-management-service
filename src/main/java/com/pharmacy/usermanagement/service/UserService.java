@@ -27,6 +27,8 @@ public class UserService {
        return userRepository.findByEmail(email).isPresent();
     }
 
+
+
     public void registerUser(UserRequestDto userDto) {
         UserEntity user = new UserEntity();
         user.setEmail(userDto.getEmail());
@@ -34,6 +36,7 @@ public class UserService {
         user.setFirstName(userDto.getFirstName());
         user.setLastName(userDto.getLastName());
         user.setAddress(userDto.getAddress());
+        user.setAccountLocked(true);
         user.setMobileNumber(userDto.getMobileNumber());
         userRepository.save(user);
     }
@@ -115,4 +118,16 @@ public class UserService {
         // Send reset token to the user's email or mobile number
         // Email/SMS sending logic goes here
     }
+
+
+    public Long getRoleIdByEmail(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User with email " + email + " not found"));
+
+        return user.getUserRoles().stream()
+                .map(userRole -> userRole.getRole().getRoleId())
+                .findFirst() // Retrieve the first role ID
+                .orElseThrow(() -> new IllegalArgumentException("No roles found for user with email " + email));
+    }
+
 }

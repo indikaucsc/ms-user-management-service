@@ -1,3 +1,4 @@
+/*
 package com.pharmacy.usermanagement.config;
 
 import org.springframework.context.annotation.Bean;
@@ -17,3 +18,4 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(true); // Allow cookies and credentials
     }
 }
+*/

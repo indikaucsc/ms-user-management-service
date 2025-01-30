@@ -33,18 +33,31 @@ public class JwtAuthenticationFilter implements Filter {
             FilterChain filterChain) throws IOException, ServletException {
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+
         String token = getTokenFromHeader(httpRequest);
+        System.out.println("Filter token: " + token);
 
-        if (StringUtils.hasText(token) && jwtTokenUtil.validateToken(token)) {
-            String username = jwtTokenUtil.getUsernameFromToken(token);
+        try {
+            if (StringUtils.hasText(token)) {
+                if (!jwtTokenUtil.validateToken(token)) {
+                    throw new SecurityException("Invalid JWT Token");
+                }
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpRequest));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                String username = jwtTokenUtil.getUsernameFromToken(token);
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    var userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpRequest));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
+        } catch (SecurityException ex) {
+            // Log the error and send an unauthorized response
+//            System.err.println("Authentication failed: " + ex.getMessage());
+//            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: " + ex.getMessage());
+//            return; // Stop further execution of the filter chain
         }
 
         filterChain.doFilter(request, response);
@@ -52,6 +65,7 @@ public class JwtAuthenticationFilter implements Filter {
 
     private String getTokenFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
+        System.out.println("Received Authorization Header: " + bearerToken);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7); // Remove "Bearer " prefix
         }

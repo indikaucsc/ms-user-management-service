@@ -1,11 +1,12 @@
-package com.pharmacy.usermanagement.dto.request;
+package com.pharmacy.usermanagement.dto.response;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class RegisterRequest {
+public class UserResponseDto {
+    private long id;
     private String email;
     private String password;
     private String firstName;
