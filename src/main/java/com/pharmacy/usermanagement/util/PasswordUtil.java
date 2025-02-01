@@ -17,17 +17,8 @@ public class PasswordUtil {
 
     // Method to hash a password
     public static String hashPassword(String password) {
-//        try {
-//            // Generate a random salt
-//            byte[] salt = generateSalt();
-//            // Hash the password
-//            byte[] hashedPassword = hashPasswordWithSalt(password, salt);
-//            // Encode salt and hash in Base64 for storage
-//            return Base64.getEncoder().encodeToString(salt) + ":" + Base64.getEncoder().encodeToString(hashedPassword);
-//        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-//            throw new RuntimeException("Error while hashing password", e);
-//        }
-        return BCrypt.hashpw(password,BCrypt.gensalt());
+
+        return BCrypt.hashpw(password, BCrypt.gensalt());
     }
 
     // Method to verify a password

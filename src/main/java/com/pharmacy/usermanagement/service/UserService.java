@@ -1,16 +1,15 @@
 package com.pharmacy.usermanagement.service;
 
-import com.pharmacy.usermanagement.dto.request.UserRequestDto;
+import com.pharmacy.usermanagement.dto.request.RegisterRequest;
 import com.pharmacy.usermanagement.dto.response.UserResponseDto;
 import com.pharmacy.usermanagement.model.UserEntity;
 import com.pharmacy.usermanagement.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,101 +23,11 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+    private static final String MOBILE_NUMBER_REGEX = "^\\+?[0-9]{10,15}$";
 
-   public boolean existsByEmail(String email){
-       return userRepository.findByEmail(email).isPresent();
-    }
-
-
-
-    public void registerUser(UserRequestDto userDto) {
-        UserEntity user = new UserEntity();
-        user.setEmail(userDto.getEmail());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        user.setFirstName(userDto.getFirstName());
-        user.setLastName(userDto.getLastName());
-        user.setAddress(userDto.getAddress());
-        user.setAccountLocked(true);
-        user.setMobileNumber(userDto.getMobileNumber());
-        userRepository.save(user);
-    }
-
-    @Transactional
-    public String loginUser(UserRequestDto userDto) {
-        UserEntity user = userRepository.findByEmail(userDto.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (user.isAccountLocked()) {
-            throw new RuntimeException("Account is locked due to multiple failed login attempts.");
-        }
-
-        if (passwordEncoder.matches(userDto.getPassword(), user.getPassword())) {
-            resetFailedLoginAttempts(user);
-            // Generate and return JWT token
-            return "JWT-TOKEN"; // Replace with actual JWT token generation logic
-        } else {
-            incrementFailedLoginAttempts(user);
-            throw new RuntimeException("Invalid credentials");
-        }
-    }
-
-    private void incrementFailedLoginAttempts(UserEntity user) {
-        int newAttempts = user.getFailedLoginAttempts() + 1;
-        user.setFailedLoginAttempts(newAttempts);
-        if (newAttempts >= MAX_FAILED_ATTEMPTS) {
-            user.setAccountLocked(true);
-        }
-        userRepository.save(user);
-    }
-
-    private void resetFailedLoginAttempts(UserEntity user) {
-        user.setFailedLoginAttempts(0);
-        userRepository.save(user);
-    }
-
-    public List<String> getRoles() {
-        return List.of("ADMIN", "PHARMACIST", "STORE_MANAGER");
-    }
-
-    public void updateUser(Long id, UserRequestDto userDto) {
-        UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setEmail(userDto.getEmail());
-        user.setFirstName(userDto.getFirstName());
-        user.setLastName(userDto.getLastName());
-        user.setAddress(userDto.getAddress());
-        user.setMobileNumber(userDto.getMobileNumber());
-        userRepository.save(user);
-    }
-
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
-    }
-
-    @Transactional
-    public void resetPassword(String email, String newPassword, String resetToken) {
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!resetToken.equals(user.getResetToken())) {
-            throw new RuntimeException("Invalid reset token");
-        }
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetToken(null); // Clear the reset token after password reset
-        userRepository.save(user);
-    }
-
-    @Transactional
-    public void generateResetToken(String email, String resetToken) {
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        user.setResetToken(resetToken);
-        userRepository.save(user);
-
-        // Send reset token to the user's email or mobile number
-        // Email/SMS sending logic goes here
+    public boolean existsByEmail(String email) {
+        return userRepository.findByEmail(email).isPresent();
     }
 
 
@@ -148,6 +57,53 @@ public class UserService {
         dto.setId(user.getUserId());
 
         return dto;
+    }
+
+    public void validateRegisterRequest(RegisterRequest request) {
+
+        // Validate email
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (!Pattern.matches(EMAIL_REGEX, request.getEmail())) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+
+        // Validate password
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+        if (request.getPassword().length() < 8 || request.getPassword().length() > 18) {
+            throw new IllegalArgumentException("Password must be between 8 and 18 characters long");
+        }
+
+        // Validate first name
+        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
+            throw new IllegalArgumentException("First name is required.");
+        }
+        if (request.getFirstName().length() > 50) {
+            throw new IllegalArgumentException("First name should not exceed 50 characters");
+        }
+
+        // Validate mobile number
+        if (request.getMobileNumber() == null || request.getMobileNumber().isBlank()) {
+            throw new IllegalArgumentException("Mobile number is required.");
+        }
+        if (!Pattern.matches(MOBILE_NUMBER_REGEX, request.getMobileNumber())) {
+            throw new IllegalArgumentException("Invalid mobile number format");
+        }
+
+        // Validate role IDs
+        if (request.getRoleIds() == null || request.getRoleIds().isEmpty()) {
+            throw new IllegalArgumentException("At least one role ID is required");
+        }
+        List<Long> validRoleIds = List.of(1L, 2L, 3L); // Admin, Pharmacist, Store Manager
+        for (Long roleId : request.getRoleIds()) {
+            if (!validRoleIds.contains(roleId)) {
+                throw new IllegalArgumentException("Role IDs must be 1 (Admin), 2 (Pharmacist), or 3 (Store Manager)");
+            }
+        }
+
     }
 
 }

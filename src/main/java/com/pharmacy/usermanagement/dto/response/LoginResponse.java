@@ -6,7 +6,6 @@ import lombok.Data;
 public class LoginResponse {
     private boolean success;
     private String message;
-    private String token; // Only populated on successful login
-    private String refreshToken;
+    private String token;
 }
 

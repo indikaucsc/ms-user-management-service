@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
 
     private final AuthenticationManager authenticationManager;
@@ -69,6 +71,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
         ApiResponse<UserResponseDto> response = new ApiResponse<>();
 
+        userService.validateRegisterRequest(registerRequest);
         if (userService.existsByEmail(registerRequest.getEmail())) {
             response.setSuccess(false);
             response.setMessage("Email is already in use!");
@@ -114,7 +117,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<UserResponseDto>> updateUser(
             @PathVariable Long id,
-            @RequestBody RegisterRequest updateRequest) {
+          @Valid  @RequestBody RegisterRequest updateRequest) {
 
         ApiResponse<UserResponseDto> response = new ApiResponse<>();
 

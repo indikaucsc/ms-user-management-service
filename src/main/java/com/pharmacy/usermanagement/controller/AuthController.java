@@ -38,7 +38,6 @@ public class AuthController {
         loginResponse.setSuccess(true);
         loginResponse.setMessage("Login successful");
         loginResponse.setToken(token);
-        loginResponse.setRefreshToken(token);
         return ResponseEntity.ok(loginResponse);
 
     }

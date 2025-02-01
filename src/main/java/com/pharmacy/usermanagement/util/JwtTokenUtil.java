@@ -26,6 +26,7 @@ public class JwtTokenUtil {
      * Generate a JWT token.
      *
      * @param username the username for which the token is generated.
+     * @param roleId the role ID of the user.
      * @return the generated token.
      */
     public String generateToken(String username, long roleId) {
@@ -73,6 +74,17 @@ public class JwtTokenUtil {
      */
     public String getUsernameFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
+    }
+
+    /**
+     * Extract the roleId from the token.
+     *
+     * @param token the token from which the roleId is extracted.
+     * @return the roleId.
+     */
+    public Integer getRoleIdFromToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        return claims.get("roleId", Integer.class);
     }
 
     /**

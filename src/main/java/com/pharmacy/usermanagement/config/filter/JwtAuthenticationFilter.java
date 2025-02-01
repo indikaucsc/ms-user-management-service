@@ -40,16 +40,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (StringUtils.hasText(token) && jwtTokenUtil.validateToken(token)) {
                 String username = jwtTokenUtil.getUsernameFromToken(token);
+                Integer roleId = jwtTokenUtil.getRoleIdFromToken(token);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    // Restrict access for roleId 2 or 3 to /user/*
+                    if ((roleId == 2 || roleId == 3) && request.getRequestURI().startsWith("/user/")) {
+                        logger.warn("Access denied for role ID {} on path: {}", roleId, request.getRequestURI());
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden: Access Denied");
+                        return;
+                    }
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.info("User '{}' authenticated successfully", username);
+                    logger.info("User '{}' authenticated successfully with role ID {}", username, roleId);
                 }
             }
         } catch (SecurityException ex) {
