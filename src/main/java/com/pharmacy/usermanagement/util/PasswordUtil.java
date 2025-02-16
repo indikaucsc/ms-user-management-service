@@ -24,14 +24,7 @@ public class PasswordUtil {
     // Method to verify a password
     public static boolean verifyPassword(String password, String storedHash) {
         try {
-            // Split stored hash into salt and hash
-            String[] parts = storedHash.split(":");
-            byte[] salt = Base64.getDecoder().decode(parts[0]);
-            byte[] hash = Base64.getDecoder().decode(parts[1]);
-            // Hash the provided password with the stored salt
-            byte[] hashedPassword = hashPasswordWithSalt(password, salt);
-            // Compare the hashes
-            return java.util.Arrays.equals(hashedPassword, hash);
+            return BCrypt.checkpw(password, storedHash); // ✅ Uses correct BCrypt verification
         } catch (Exception e) {
             throw new RuntimeException("Error while verifying password", e);
         }

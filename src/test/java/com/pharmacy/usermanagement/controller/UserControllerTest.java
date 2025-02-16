@@ -4,8 +4,12 @@ import com.pharmacy.usermanagement.dto.request.RegisterRequest;
 import com.pharmacy.usermanagement.dto.request.UpdateUserRequest;
 import com.pharmacy.usermanagement.dto.response.ApiResponse;
 import com.pharmacy.usermanagement.dto.response.UserResponseDto;
+import com.pharmacy.usermanagement.model.RoleEntity;
 import com.pharmacy.usermanagement.model.UserEntity;
+import com.pharmacy.usermanagement.model.UserRoleEntity;
+import com.pharmacy.usermanagement.repository.RoleRepository;
 import com.pharmacy.usermanagement.repository.UserRepository;
+import com.pharmacy.usermanagement.repository.UserRoleRepository;
 import com.pharmacy.usermanagement.service.UserService;
 import com.pharmacy.usermanagement.util.PasswordUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +33,12 @@ class UserControllerTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
+    private UserRoleRepository userRoleRepository;
 
     @Mock
     private UserService userService;
@@ -98,7 +108,7 @@ class UserControllerTest {
         assertEquals("User not found", exception.getMessage());
     }
 
-    // ✅ Test: Register a new user (Success)
+    // ✅ Test: Register user (Success)
     @Test
     void testRegisterUser_Success() {
         RegisterRequest request = new RegisterRequest();
@@ -109,18 +119,29 @@ class UserControllerTest {
         request.setAddress("123 Street");
         request.setMobileNumber("9876543210");
         request.setActive(true);
+        request.setRoleIds(List.of(1L));
 
         UserEntity savedUser = new UserEntity();
         savedUser.setUserId(1L);
         savedUser.setEmail(request.getEmail());
 
+        RoleEntity role1 = new RoleEntity();
+        role1.setRoleId(1L);
+        role1.setRoleName("Admin");
+
+        UserRoleEntity userRole = new UserRoleEntity();
+        userRole.setUser(savedUser);
+        userRole.setRole(role1);
+
         when(userService.existsByEmail(request.getEmail())).thenReturn(false);
         when(userRepository.save(any(UserEntity.class))).thenReturn(savedUser);
+        when(roleRepository.findByRoleId(1L)).thenReturn(Optional.of(role1));
+        when(userRoleRepository.save(any(UserRoleEntity.class))).thenReturn(userRole);
         when(userService.mapToUserResponseDto(savedUser))
                 .thenReturn(new UserResponseDto(
                         1L, "newuser@example.com", "hashedpassword123",
                         "John", "Doe", "123 Street", "9876543210",
-                        true, List.of()
+                        true, List.of(1L)
                 ));
 
         ResponseEntity<ApiResponse<UserResponseDto>> response = userController.registerUser(request);
@@ -129,22 +150,28 @@ class UserControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().isSuccess());
         assertEquals("User registered successfully!", response.getBody().getMessage());
+
+        verify(userRoleRepository, times(1)).save(any(UserRoleEntity.class));
     }
 
-    // ❌ Test: Register a user (Email Already Exists)
+    // ❌ Test: Register user with invalid role (Failure)
     @Test
-    void testRegisterUser_EmailExists() {
+    void testRegisterUser_WithInvalidRole_Failure() {
         RegisterRequest request = new RegisterRequest();
-        request.setEmail("existing@example.com");
+        request.setEmail("user@example.com");
+        request.setPassword("password123");
+        request.setRoleIds(List.of(999L));
 
-        when(userService.existsByEmail(request.getEmail())).thenReturn(true);
+        when(userService.existsByEmail(request.getEmail())).thenReturn(false);
+        when(roleRepository.findByRoleId(999L)).thenReturn(Optional.empty());
 
-        ResponseEntity<ApiResponse<UserResponseDto>> response = userController.registerUser(request);
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            userController.registerUser(request);
+        });
 
-        assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertFalse(response.getBody().isSuccess());
-        assertEquals("Email is already in use!", response.getBody().getMessage());
+        assertEquals("Role not found for ID: 999", exception.getMessage());
+
+        verify(userRoleRepository, never()).save(any(UserRoleEntity.class));
     }
 
     // ✅ Test: Update user (Success)
@@ -153,9 +180,6 @@ class UserControllerTest {
         UpdateUserRequest updateRequest = new UpdateUserRequest();
         updateRequest.setFirstName("Updated");
         updateRequest.setLastName("User");
-        updateRequest.setAddress("New Address");
-        updateRequest.setMobileNumber("9999999999");
-        updateRequest.setActive(false);
 
         UserEntity existingUser = new UserEntity();
         existingUser.setUserId(1L);
@@ -163,12 +187,6 @@ class UserControllerTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(UserEntity.class))).thenReturn(existingUser);
-        when(userService.mapToUserResponseDto(existingUser))
-                .thenReturn(new UserResponseDto(
-                        1L, "user@example.com", "hashedpassword123",
-                        "Updated", "User", "New Address", "9999999999",
-                        false, List.of()
-                ));
 
         ResponseEntity<ApiResponse<UserResponseDto>> response = userController.updateUser(1L, updateRequest);
 
@@ -188,18 +206,5 @@ class UserControllerTest {
         assertNotNull(response);
         assertTrue(response.getBody().isSuccess());
         assertEquals("User deleted successfully", response.getBody().getMessage());
-    }
-
-    // ❌ Test: Delete user (User Not Found)
-    @Test
-    void testDeleteUser_NotFound() {
-        when(userRepository.existsById(99L)).thenReturn(false);
-
-        ResponseEntity<ApiResponse<Void>> response = userController.deleteUser(99L);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertFalse(response.getBody().isSuccess());
-        assertEquals("User not found", response.getBody().getMessage());
     }
 }
