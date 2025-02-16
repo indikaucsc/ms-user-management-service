@@ -5,10 +5,10 @@ FROM openjdk:21-jdk
 WORKDIR /app
 
 # Step 3: Copy the JAR file into the container
-COPY target/ms-api-gateway-service-0.0.1-SNAPSHOT.jar /app/
+COPY target/ms-user-management-service-0.0.1-SNAPSHOT.jar /app/
 
 # Step 4: Expose the application port (match it with your Spring Boot app's server.port)
-EXPOSE 8080
+EXPOSE 8098
 
 # Step 5: Run the application
-ENTRYPOINT ["java", "-jar", "ms-api-gateway-service-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "ms-user-management-service-0.0.1-SNAPSHOT.jar"]
