@@ -1,6 +1,7 @@
 package com.pharmacy.usermanagement.controller;
 
 import com.pharmacy.usermanagement.dto.request.RegisterRequest;
+import com.pharmacy.usermanagement.dto.request.UpdateUserRequest;
 import com.pharmacy.usermanagement.dto.response.ApiResponse;
 import com.pharmacy.usermanagement.dto.response.UserResponseDto;
 import com.pharmacy.usermanagement.model.RoleEntity;
@@ -117,7 +118,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<UserResponseDto>> updateUser(
             @PathVariable Long id,
-          @Valid  @RequestBody RegisterRequest updateRequest) {
+          @Valid  @RequestBody UpdateUserRequest updateRequest) {
 
         ApiResponse<UserResponseDto> response = new ApiResponse<>();
 

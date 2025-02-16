@@ -8,6 +8,7 @@ import java.util.List;
 
 @Data
 @RequiredArgsConstructor
+@AllArgsConstructor
 public class UserResponseDto {
     private long id;
     private String email;
@@ -18,6 +19,7 @@ public class UserResponseDto {
     private String mobileNumber;
     private boolean active;
     private List<Long> roleIds;
+
 
 
          /*   Admin 1
